@@ -1,0 +1,18 @@
+# 二進位檔案
+task-api
+*.exe
+
+# 建置產物
+/bin/
+/dist/
+/build/
+
+# IDE 相關檔案
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS 相關檔案
+.DS_Store
+Thumbs.db
