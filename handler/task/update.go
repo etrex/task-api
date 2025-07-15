@@ -14,8 +14,8 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	id := c.Param("id")
 	
 	var task model.Task
-	// 解析 request 的內容到變數 task，若失敗回傳錯誤訊息
-	if err := c.ShouldBindJSON(&task); err != nil {
+	// 驗證請求資料
+	if err := validateTaskRequest(c, &task); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

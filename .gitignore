@@ -7,6 +7,11 @@ task-api
 /dist/
 /build/
 
+# 測試相關檔案
+coverage.out
+*.test
+*.prof
+
 # IDE 相關檔案
 .vscode/
 .idea/
