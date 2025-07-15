@@ -1,0 +1,26 @@
+# Git 相關檔案
+.git
+.gitignore
+
+# 測試相關檔案
+coverage.out
+*_test.go
+
+# IDE 相關檔案
+.vscode
+.idea
+
+# 暫存檔案
+*.tmp
+*.log
+
+# OS 相關檔案
+.DS_Store
+Thumbs.db
+
+# 編譯產物
+task-api
+
+# 文件
+README.md
+*.md
