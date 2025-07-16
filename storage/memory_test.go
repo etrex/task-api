@@ -9,40 +9,31 @@ import (
 )
 
 func TestMemoryStorage_Create(t *testing.T) {
-	// 初始化 storage
 	storage := NewMemoryStorage()
-
-	// 測試建立資料
+	
 	task := &model.Task{
 		Name:   "Test Task",
 		Status: 0,
 	}
-
+	
 	err := storage.Create(task)
 	require.NoError(t, err)
-
-	// 確認 ID 有被產生
 	assert.NotEmpty(t, task.ID)
-
-	// 確認資料有被儲存
-	storedTask, err := storage.Get(task.ID)
-	require.NoError(t, err)
-	assert.Equal(t, task.Name, storedTask.Name)
 }
 
 func TestMemoryStorage_List(t *testing.T) {
-	// 初始化 storage
 	storage := NewMemoryStorage()
-
-	// 建立多筆資料
-	tasks := []model.Task{
+	
+	// 新增測試資料
+	tasks := []*model.Task{
 		{Name: "Task 1", Status: 0},
 		{Name: "Task 2", Status: 1},
 		{Name: "Task 3", Status: 0},
 	}
-
-	for i := range tasks {
-		storage.Create(&tasks[i])
+	
+	for _, task := range tasks {
+		err := storage.Create(task)
+		require.NoError(t, err)
 	}
 
 	// 測試 List
@@ -56,90 +47,128 @@ func TestMemoryStorage_List(t *testing.T) {
 }
 
 func TestMemoryStorage_Get(t *testing.T) {
-	// 初始化 storage
 	storage := NewMemoryStorage()
-
-	// 建立測試資料
+	
+	// 新增測試資料
 	task := &model.Task{
 		Name:   "Test Task",
-		Status: 1,
+		Status: 0,
 	}
-	storage.Create(task)
-
-	// 測試成功取得資料
-	t.Run("existing task", func(t *testing.T) {
-		result, err := storage.Get(task.ID)
-		require.NoError(t, err)
-		assert.Equal(t, task.ID, result.ID)
-	})
-
-	// 測試取得不存在的資料
-	t.Run("non-existing task", func(t *testing.T) {
-		_, err := storage.Get("non-existing-id")
-		assert.ErrorIs(t, err, ErrTaskNotFound)
-	})
+	
+	err := storage.Create(task)
+	require.NoError(t, err)
+	
+	// 測試 Get
+	retrieved, err := storage.Get(task.ID)
+	require.NoError(t, err)
+	assert.Equal(t, task.Name, retrieved.Name)
+	assert.Equal(t, task.Status, retrieved.Status)
+	assert.Equal(t, task.ID, retrieved.ID)
 }
 
 func TestMemoryStorage_Update(t *testing.T) {
-	// 初始化 storage
 	storage := NewMemoryStorage()
-
-	// 建立測試資料
+	
+	// 新增測試資料
 	task := &model.Task{
-		Name:   "Original Task",
+		Name:   "Test Task",
 		Status: 0,
 	}
-	storage.Create(task)
-	originalID := task.ID
-
-	// 測試成功更新
-	t.Run("existing task", func(t *testing.T) {
-		updatedTask := &model.Task{
-			Name:   "Updated Task",
-			Status: 1,
-		}
-
-		err := storage.Update(originalID, updatedTask)
-		require.NoError(t, err)
-
-		// 確認資料有被更新
-		result, _ := storage.Get(originalID)
-		assert.Equal(t, "Updated Task", result.Name)
-		assert.Equal(t, 1, result.Status)
-		assert.Equal(t, originalID, result.ID)
-	})
-
-	// 測試更新不存在的資料
-	t.Run("non-existing task", func(t *testing.T) {
-		err := storage.Update("non-existing-id", &model.Task{})
-		assert.ErrorIs(t, err, ErrTaskNotFound)
-	})
+	
+	err := storage.Create(task)
+	require.NoError(t, err)
+	
+	// 測試 Update
+	updatedTask := &model.Task{
+		Name:   "Updated Task",
+		Status: 1,
+	}
+	
+	err = storage.Update(task.ID, updatedTask)
+	require.NoError(t, err)
+	
+	// 驗證更新結果
+	retrieved, err := storage.Get(task.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Updated Task", retrieved.Name)
+	assert.Equal(t, 1, retrieved.Status)
+	assert.Equal(t, task.ID, retrieved.ID)
 }
 
 func TestMemoryStorage_Delete(t *testing.T) {
-	// 初始化 storage
 	storage := NewMemoryStorage()
-
-	// 建立測試資料
+	
+	// 新增測試資料
 	task := &model.Task{
-		Name:   "Task to Delete",
+		Name:   "Test Task",
 		Status: 0,
 	}
-	storage.Create(task)
+	
+	err := storage.Create(task)
+	require.NoError(t, err)
+	
+	// 測試 Delete
+	err = storage.Delete(task.ID)
+	require.NoError(t, err)
+	
+	// 驗證刪除結果
+	_, err = storage.Get(task.ID)
+	assert.Equal(t, ErrTaskNotFound, err)
+}
 
-	// 測試成功刪除
-	t.Run("existing task", func(t *testing.T) {
-		err := storage.Delete(task.ID)
+func TestMemoryStorage_DeleteAll(t *testing.T) {
+	storage := NewMemoryStorage()
+	
+	// 新增測試資料
+	tasks := []*model.Task{
+		{Name: "Task 1", Status: 0},
+		{Name: "Task 2", Status: 1},
+		{Name: "Task 3", Status: 0},
+	}
+	
+	for _, task := range tasks {
+		err := storage.Create(task)
 		require.NoError(t, err)
+	}
+	
+	// 驗證任務已新增
+	result, err := storage.List(NewPaginationParams(1))
+	require.NoError(t, err)
+	assert.Equal(t, 3, result.Pagination.Total)
+	
+	// 測試 DeleteAll
+	err = storage.DeleteAll()
+	require.NoError(t, err)
+	
+	// 驗證所有任務已刪除
+	result, err = storage.List(NewPaginationParams(1))
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.Pagination.Total)
+	assert.Len(t, result.Data, 0)
+}
 
-		// 確認資料已被刪除
-		_, err = storage.Get(task.ID)
-		assert.ErrorIs(t, err, ErrTaskNotFound)
-	})
+func TestMemoryStorage_GetNotFound(t *testing.T) {
+	storage := NewMemoryStorage()
+	
+	_, err := storage.Get("nonexistent")
+	assert.Equal(t, ErrTaskNotFound, err)
+}
 
-	// 測試刪除不存在的資料
-	t.Run("non-existing task", func(t *testing.T) {
-		err := storage.Delete("non-existing-id")
-		assert.ErrorIs(t, err, ErrTaskNotFound)
-	})
+func TestMemoryStorage_UpdateNotFound(t *testing.T) {
+	storage := NewMemoryStorage()
+	
+	task := &model.Task{
+		Name:   "Test Task",
+		Status: 0,
+	}
+	
+	err := storage.Update("nonexistent", task)
+	assert.Equal(t, ErrTaskNotFound, err)
+}
+
+func TestMemoryStorage_DeleteNotFound(t *testing.T) {
+	storage := NewMemoryStorage()
+	
+	err := storage.Delete("nonexistent")
+	assert.Equal(t, ErrTaskNotFound, err)
 }

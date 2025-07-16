@@ -385,6 +385,7 @@
                 </div>
                 
                 <button onclick="createTask()" id="createBtn">新增任務</button>
+                <button onclick="deleteAllTasks()" id="deleteAllBtn" class="btn-danger">刪除全部任務</button>
 
                 <div class="tasks-container">
                     <h3>任務列表</h3>
@@ -843,9 +844,47 @@
             controlsEl.innerHTML = paginationHTML;
         }
 
+        // 刪除全部任務
+        async function deleteAllTasks() {
+            if (isLoading) return;
+            
+            if (!confirm('確定要刪除所有任務嗎？此操作無法復原。')) {
+                return;
+            }
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const result = await apiRequest('DELETE', `${API_BASE}/tasks`);
+
+                if (result.ok) {
+                    // 清空本地資料
+                    tasks = [];
+                    currentPage = 1;
+                    totalPages = 1;
+                    totalTasks = 0;
+                    
+                    renderTasks();
+                    renderPagination();
+                    updateStats();
+                    updateApiStatus('success', '所有任務已刪除');
+                } else {
+                    throw new Error(`HTTP ${result.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `刪除失敗: ${error.message}`);
+                console.error('刪除所有任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
         // 更新按鈕狀態
         function updateButtonState(disabled) {
             document.getElementById('createBtn').disabled = disabled;
+            document.getElementById('deleteAllBtn').disabled = disabled;
         }
 
         // HTML 轉義

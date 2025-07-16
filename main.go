@@ -36,6 +36,7 @@ func main() {
 	r.POST("/tasks", taskHandler.CreateTask)
 	r.PUT("/tasks/:id", taskHandler.UpdateTask)
 	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
+	r.DELETE("/tasks", taskHandler.DeleteAllTasks)
 	
 	// 健康檢查 endpoint
 	r.GET("/health", func(c *gin.Context) {

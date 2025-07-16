@@ -6,11 +6,12 @@ import (
 
 // MockStorage 用於測試的 mock storage
 type MockStorage struct {
-	ListFunc   func(params PaginationParams) (*PaginationResult, error)
-	GetFunc    func(id string) (*model.Task, error)
-	CreateFunc func(task *model.Task) error
-	UpdateFunc func(id string, task *model.Task) error
-	DeleteFunc func(id string) error
+	ListFunc      func(params PaginationParams) (*PaginationResult, error)
+	GetFunc       func(id string) (*model.Task, error)
+	CreateFunc    func(task *model.Task) error
+	UpdateFunc    func(id string, task *model.Task) error
+	DeleteFunc    func(id string) error
+	DeleteAllFunc func() error
 }
 
 func (m *MockStorage) List(params PaginationParams) (*PaginationResult, error) {
@@ -54,6 +55,13 @@ func (m *MockStorage) Update(id string, task *model.Task) error {
 func (m *MockStorage) Delete(id string) error {
 	if m.DeleteFunc != nil {
 		return m.DeleteFunc(id)
+	}
+	return nil
+}
+
+func (m *MockStorage) DeleteAll() error {
+	if m.DeleteAllFunc != nil {
+		return m.DeleteAllFunc()
 	}
 	return nil
 }

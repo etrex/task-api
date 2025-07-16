@@ -51,6 +51,7 @@ type Storage interface {
 	Create(task *model.Task) error
 	Update(id string, task *model.Task) error
 	Delete(id string) error
+	DeleteAll() error
 }
 
 type MemoryStorage struct {
@@ -180,6 +181,17 @@ func (s *MemoryStorage) Delete(id string) error {
 	
 	// 從 index map 中刪除
 	delete(s.indexMap, id)
+	
+	return nil
+}
+
+func (s *MemoryStorage) DeleteAll() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	// 清空 slice 和 map
+	s.tasks = make([]model.Task, 0)
+	s.indexMap = make(map[string]int)
 	
 	return nil
 }
