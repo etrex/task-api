@@ -571,6 +571,56 @@
             }
         }
 
+        // 重新載入單個任務
+        async function reloadTask(taskId) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const result = await apiRequest('GET', `${API_BASE}/tasks/${taskId}`);
+
+                if (result.ok) {
+                    // 檢查伺服器是否返回了任務資料
+                    if (!result.data || !result.data.id) {
+                        throw new Error('伺服器沒有返回任務資料');
+                    }
+                    
+                    // 更新本地記憶體中的任務
+                    const taskIndex = tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex] = result.data;
+                    } else {
+                        // 如果本地沒有這個任務，加入到列表
+                        tasks.push(result.data);
+                    }
+                    
+                    renderTasks();
+                    updateStats();
+                    updateApiStatus('success', '任務重新載入成功');
+                } else if (result.status === 404) {
+                    // 如果伺服器上沒有這個任務，從本地移除
+                    const taskIndex = tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        tasks.splice(taskIndex, 1);
+                    }
+                    
+                    renderTasks();
+                    updateStats();
+                    updateApiStatus('success', '任務已被刪除（從伺服器）');
+                } else {
+                    throw new Error(`HTTP ${result.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `重新載入失敗: ${error.message}`);
+                console.error('重新載入任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
         // 渲染任務列表
         function renderTasks() {
             const container = document.getElementById('tasksList');
@@ -593,6 +643,7 @@
                             `<button class="btn-small btn-success" onclick="updateTaskStatus('${task.id}', 1)">完成</button>` : 
                             `<button class="btn-small" onclick="updateTaskStatus('${task.id}', 0)">重新開啟</button>`
                         }
+                        <button class="btn-small" onclick="reloadTask('${task.id}')">重新載入</button>
                         <button class="btn-small btn-danger" onclick="deleteTask('${task.id}')">刪除</button>
                     </div>
                 </div>
