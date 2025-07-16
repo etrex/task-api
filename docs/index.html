@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task API 管理系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .api-status {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .api-status.loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .api-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .api-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .tasks-container {
+            margin-top: 30px;
+        }
+
+        .task-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .task-status {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-success {
+            background: #059669;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Task API 管理系統</h1>
+            <p>簡單的任務管理工具</p>
+        </div>
+        
+        <div class="content">
+            <div id="apiStatus" class="api-status loading">
+                正在連接 API...
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTasks">0</div>
+                    <div class="stat-label">總任務數</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedTasks">0</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingTasks">0</div>
+                    <div class="stat-label">待處理</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="taskName">新增任務</label>
+                <input type="text" id="taskName" placeholder="輸入任務名稱..." />
+            </div>
+            
+            <button onclick="createTask()" id="createBtn">新增任務</button>
+            <button onclick="loadTasks()" id="refreshBtn">重新整理</button>
+
+            <div class="tasks-container">
+                <h3>任務列表</h3>
+                <div id="tasksList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API 基礎 URL
+        const API_BASE = 'https://task-api.etrex.tw';
+        
+        // 狀態管理
+        let tasks = [];
+        let isLoading = false;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            testApiConnection();
+            loadTasks();
+            
+            // Enter 鍵新增任務
+            document.getElementById('taskName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    createTask();
+                }
+            });
+        });
+
+        // 測試 API 連線
+        async function testApiConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                if (response.ok) {
+                    updateApiStatus('success', 'API 連線成功');
+                } else {
+                    updateApiStatus('error', `API 連線失敗 (${response.status})`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `API 連線失敗: ${error.message}`);
+            }
+        }
+
+        // 更新 API 狀態
+        function updateApiStatus(status, message) {
+            const statusEl = document.getElementById('apiStatus');
+            statusEl.className = `api-status ${status}`;
+            statusEl.textContent = message;
+        }
+
+        // 載入任務列表
+        async function loadTasks() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                if (response.ok) {
+                    tasks = await response.json();
+                    renderTasks();
+                    updateStats();
+                    updateApiStatus('success', `已載入 ${tasks.length} 個任務`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `載入失敗: ${error.message}`);
+                console.error('載入任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
+        // 新增任務
+        async function createTask() {
+            const nameInput = document.getElementById('taskName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('請輸入任務名稱');
+                return;
+            }
+
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        status: 0
+                    })
+                });
+
+                if (response.ok) {
+                    nameInput.value = '';
+                    await loadTasks();
+                    updateApiStatus('success', '任務新增成功');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `新增失敗: ${error.message}`);
+                console.error('新增任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
+        // 更新任務狀態
+        async function updateTaskStatus(taskId, newStatus) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) throw new Error('任務不存在');
+
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: task.name,
+                        status: newStatus
+                    })
+                });
+
+                if (response.ok) {
+                    await loadTasks();
+                    updateApiStatus('success', '任務狀態更新成功');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `更新失敗: ${error.message}`);
+                console.error('更新任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
+        // 刪除任務
+        async function deleteTask(taskId) {
+            if (!confirm('確定要刪除這個任務嗎？')) return;
+            
+            if (isLoading) return;
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadTasks();
+                    updateApiStatus('success', '任務刪除成功');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `刪除失敗: ${error.message}`);
+                console.error('刪除任務失敗:', error);
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
+        // 渲染任務列表
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state">尚無任務，請新增第一個任務</div>';
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-info">
+                        <div class="task-name">${escapeHtml(task.name)}</div>
+                        <div class="task-status">
+                            狀態: ${task.status === 1 ? '✅ 已完成' : '⏳ 待處理'}
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        ${task.status === 0 ? 
+                            `<button class="btn-small btn-success" onclick="updateTaskStatus('${task.id}', 1)">完成</button>` : 
+                            `<button class="btn-small" onclick="updateTaskStatus('${task.id}', 0)">重新開啟</button>`
+                        }
+                        <button class="btn-small btn-danger" onclick="deleteTask('${task.id}')">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新統計資訊
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.status === 1).length;
+            const pending = total - completed;
+
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('pendingTasks').textContent = pending;
+        }
+
+        // 更新按鈕狀態
+        function updateButtonState(disabled) {
+            document.getElementById('createBtn').disabled = disabled;
+            document.getElementById('refreshBtn').disabled = disabled;
+        }
+
+        // HTML 轉義
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

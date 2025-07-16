@@ -9,6 +9,23 @@ import (
 func main() {
 	r := gin.Default()
 
+	// CORS middleware - 只允許前端域名
+	r.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin == "https://etrex.tw" {
+			c.Header("Access-Control-Allow-Origin", "https://etrex.tw")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Content-Type")
+		}
+		
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		
+		c.Next()
+	})
+
 	memStorage := storage.NewMemoryStorage()
 	taskHandler := task.NewTaskHandler(memStorage)
 
