@@ -30,6 +30,7 @@ func main() {
 	taskHandler := task.NewTaskHandler(memStorage)
 
 	r.GET("/tasks", taskHandler.ListTasks)
+	r.GET("/tasks/:id", taskHandler.GetTask)
 	r.POST("/tasks", taskHandler.CreateTask)
 	r.PUT("/tasks/:id", taskHandler.UpdateTask)
 	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
