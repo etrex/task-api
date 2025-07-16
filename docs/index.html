@@ -403,7 +403,12 @@
             
             try {
                 const response = await fetch(url, options);
-                const responseData = response.ok ? await response.json() : null;
+                let responseData = null;
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    responseData = text ? JSON.parse(text) : null;
+                }
                 
                 logRequest(method, url, body, responseData, response.ok ? null : `HTTP ${response.status}`);
                 
@@ -471,9 +476,18 @@
                 });
 
                 if (result.ok) {
+                    // 檢查伺服器是否返回了新任務資料
+                    if (!result.data || !result.data.id) {
+                        throw new Error('伺服器沒有返回任務 ID');
+                    }
+                    
                     nameInput.value = '';
-                    isLoading = false;
-                    await loadTasks(true);
+                    
+                    // 直接更新本地記憶體，不重新 get list
+                    tasks.push(result.data);
+                    
+                    renderTasks();
+                    updateStats();
                     updateApiStatus('success', '任務新增成功');
                 } else {
                     throw new Error(`HTTP ${result.status}`);
@@ -504,8 +518,14 @@
                 });
 
                 if (result.ok) {
-                    isLoading = false;
-                    await loadTasks(true);
+                    // 直接更新本地記憶體，不重新 get list
+                    const taskIndex = tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex].status = newStatus;
+                    }
+                    
+                    renderTasks();
+                    updateStats();
                     updateApiStatus('success', '任務狀態更新成功');
                 } else {
                     throw new Error(`HTTP ${result.status}`);
@@ -530,8 +550,14 @@
                 const result = await apiRequest('DELETE', `${API_BASE}/tasks/${taskId}`);
 
                 if (result.ok) {
-                    isLoading = false;
-                    await loadTasks(true);
+                    // 直接從本地記憶體移除，不重新 get list
+                    const taskIndex = tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        tasks.splice(taskIndex, 1);
+                    }
+                    
+                    renderTasks();
+                    updateStats();
                     updateApiStatus('success', '任務刪除成功');
                 } else {
                     throw new Error(`HTTP ${result.status}`);
