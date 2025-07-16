@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task API - Performance Benchmark</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .stop-btn {
+            background: #dc3545;
+        }
+        .stop-btn:hover {
+            background: #c82333;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .status.running {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.completed {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .results-table th, .results-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .results-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .success-rate {
+            font-weight: bold;
+        }
+        .success-rate.good {
+            color: #28a745;
+        }
+        .success-rate.warning {
+            color: #ffc107;
+        }
+        .success-rate.bad {
+            color: #dc3545;
+        }
+        .chart-container {
+            margin: 30px 0;
+            height: 400px;
+        }
+        .summary {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .warning strong {
+            color: #d63384;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Task API Performance Benchmark</h1>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="index.html" style="color: #007bff; text-decoration: none; font-weight: bold;">
+                ← 回到任務管理系統
+            </a>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Cloud Run Configuration:</strong> 
+            This test is designed for Cloud Run instances with max-instances=1 and concurrency=1000. 
+            Make sure auto-scaling is disabled to get accurate single-instance performance metrics.
+        </div>
+
+        <div class="config-section">
+            <h3>Test Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="apiUrl">API Base URL</label>
+                    <input type="text" id="apiUrl" value="https://task-api.etrex.tw" placeholder="https://task-api.etrex.tw">
+                </div>
+                <div class="config-item">
+                    <label for="startConcurrency">Start Concurrency</label>
+                    <input type="number" id="startConcurrency" value="10" min="1" max="1000">
+                </div>
+                <div class="config-item">
+                    <label for="maxConcurrency">Max Concurrency</label>
+                    <input type="number" id="maxConcurrency" value="1000" min="1" max="5000">
+                </div>
+                <div class="config-item">
+                    <label for="increment">Increment Step</label>
+                    <input type="number" id="increment" value="25" min="1" max="100">
+                </div>
+                <div class="config-item">
+                    <label for="requestTimeout">Request Timeout (ms)</label>
+                    <input type="number" id="requestTimeout" value="10000" min="1000" max="60000">
+                </div>
+                <div class="config-item">
+                    <label for="testType">Test Type</label>
+                    <select id="testType">
+                        <option value="mixed">Mixed (GET/POST/PUT)</option>
+                        <option value="get">GET Only</option>
+                        <option value="post">POST Only</option>
+                        <option value="put">PUT Only</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <button id="startBtn" onclick="startBenchmark()">Start Benchmark</button>
+                <button id="stopBtn" onclick="stopBenchmark()" disabled class="stop-btn">Stop Benchmark</button>
+            </div>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+
+        <div id="results">
+            <h3>Test Results</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Concurrency</th>
+                        <th>Total Requests</th>
+                        <th>Success</th>
+                        <th>Failed</th>
+                        <th>Success Rate</th>
+                        <th>Avg Response Time</th>
+                        <th>Error Type</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="summary" class="summary" style="display: none;">
+            <h3>Performance Summary</h3>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let shouldStop = false;
+        let chart;
+        let results = [];
+        let maxStableConcurrency = 0;
+
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Success Rate (%)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Avg Response Time (ms)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Real-time Performance Metrics'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Concurrency Level'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Success Rate (%)'
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Response Time (ms)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        // Generate test data for requests
+        function generateTestData(concurrency) {
+            const tasks = [];
+            for (let i = 0; i < concurrency; i++) {
+                tasks.push({
+                    id: `test-${Date.now()}-${i}`,
+                    name: `Benchmark Task ${i}`,
+                    status: Math.random() > 0.5 ? 1 : 0
+                });
+            }
+            return tasks;
+        }
+
+        // Execute concurrent requests
+        async function executeRequests(apiUrl, concurrency, timeout, testType) {
+            const testData = generateTestData(concurrency);
+            const requests = [];
+            const startTime = Date.now();
+            
+            for (let i = 0; i < concurrency; i++) {
+                let requestPromise;
+                const task = testData[i];
+                
+                if (testType === 'mixed') {
+                    // Mixed requests: 50% GET, 25% POST, 25% PUT
+                    const rand = Math.random();
+                    if (rand < 0.5) {
+                        requestPromise = fetch(`${apiUrl}/tasks`, {
+                            method: 'GET',
+                            signal: AbortSignal.timeout(timeout)
+                        });
+                    } else if (rand < 0.75) {
+                        requestPromise = fetch(`${apiUrl}/tasks`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(task),
+                            signal: AbortSignal.timeout(timeout)
+                        });
+                    } else {
+                        requestPromise = fetch(`${apiUrl}/tasks/test-id`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(task),
+                            signal: AbortSignal.timeout(timeout)
+                        });
+                    }
+                } else if (testType === 'get') {
+                    requestPromise = fetch(`${apiUrl}/tasks`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(timeout)
+                    });
+                } else if (testType === 'post') {
+                    requestPromise = fetch(`${apiUrl}/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(task),
+                        signal: AbortSignal.timeout(timeout)
+                    });
+                } else if (testType === 'put') {
+                    requestPromise = fetch(`${apiUrl}/tasks/test-id`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(task),
+                        signal: AbortSignal.timeout(timeout)
+                    });
+                }
+                
+                requests.push(
+                    requestPromise.then(response => ({ 
+                        success: response.ok, 
+                        status: response.status,
+                        error: null 
+                    })).catch(error => ({ 
+                        success: false, 
+                        status: 0,
+                        error: error.name 
+                    }))
+                );
+            }
+            
+            const responses = await Promise.all(requests);
+            const endTime = Date.now();
+            
+            const successful = responses.filter(r => r.success).length;
+            const failed = responses.length - successful;
+            const avgResponseTime = endTime - startTime;
+            const errorTypes = responses.filter(r => !r.success).map(r => r.error);
+            const mostCommonError = errorTypes.length > 0 ? 
+                errorTypes.reduce((a, b, i, arr) => 
+                    arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
+                ) : null;
+            
+            return {
+                concurrency,
+                totalRequests: concurrency,
+                successful,
+                failed,
+                successRate: (successful / concurrency) * 100,
+                avgResponseTime,
+                errorType: mostCommonError
+            };
+        }
+
+        // Update UI with results
+        function updateResults(result) {
+            results.push(result);
+            
+            // Update table
+            const tbody = document.getElementById('resultsBody');
+            const row = document.createElement('tr');
+            
+            const successRateClass = result.successRate >= 95 ? 'good' : 
+                                   result.successRate >= 80 ? 'warning' : 'bad';
+                                   
+            row.innerHTML = `
+                <td>${result.concurrency}</td>
+                <td>${result.totalRequests}</td>
+                <td>${result.successful}</td>
+                <td>${result.failed}</td>
+                <td class="success-rate ${successRateClass}">${result.successRate.toFixed(2)}%</td>
+                <td>${result.avgResponseTime}ms</td>
+                <td>${result.errorType || 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+            
+            // Update chart
+            chart.data.labels.push(result.concurrency);
+            chart.data.datasets[0].data.push(result.successRate);
+            chart.data.datasets[1].data.push(result.avgResponseTime);
+            chart.update();
+            
+            // Track max stable concurrency
+            if (result.successRate >= 95) {
+                maxStableConcurrency = result.concurrency;
+            }
+        }
+
+        // Start benchmark
+        async function startBenchmark() {
+            if (isRunning) return;
+            
+            // Reset state
+            isRunning = true;
+            shouldStop = false;
+            results = [];
+            maxStableConcurrency = 0;
+            
+            // Update UI
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+            
+            // Get configuration
+            const apiUrl = document.getElementById('apiUrl').value;
+            const startConcurrency = parseInt(document.getElementById('startConcurrency').value);
+            const maxConcurrency = parseInt(document.getElementById('maxConcurrency').value);
+            const increment = parseInt(document.getElementById('increment').value);
+            const timeout = parseInt(document.getElementById('requestTimeout').value);
+            const testType = document.getElementById('testType').value;
+            
+            // Show status
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status running';
+            statusDiv.textContent = 'Running benchmark...';
+            
+            // Run tests
+            for (let concurrency = startConcurrency; concurrency <= maxConcurrency; concurrency += increment) {
+                if (shouldStop) break;
+                
+                statusDiv.textContent = `Testing ${concurrency} concurrent requests...`;
+                
+                try {
+                    const result = await executeRequests(apiUrl, concurrency, timeout, testType);
+                    updateResults(result);
+                    
+                    // Stop if success rate drops below 95%
+                    if (result.successRate < 95) {
+                        statusDiv.className = 'status completed';
+                        statusDiv.textContent = `Benchmark completed - Performance bottleneck found at ${concurrency} concurrency`;
+                        break;
+                    }
+                    
+                    // Add delay between tests
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (error) {
+                    console.error('Error during benchmark:', error);
+                    statusDiv.className = 'status stopped';
+                    statusDiv.textContent = 'Benchmark stopped due to error';
+                    break;
+                }
+            }
+            
+            // Show summary
+            showSummary();
+            
+            // Reset UI
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            if (!shouldStop && statusDiv.className !== 'status completed') {
+                statusDiv.className = 'status completed';
+                statusDiv.textContent = 'Benchmark completed successfully';
+            }
+        }
+
+        // Stop benchmark
+        function stopBenchmark() {
+            shouldStop = true;
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status stopped';
+            statusDiv.textContent = 'Benchmark stopped by user';
+        }
+
+        // Show summary
+        function showSummary() {
+            const summaryDiv = document.getElementById('summary');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            if (results.length === 0) return;
+            
+            const lastResult = results[results.length - 1];
+            const bestResult = results.reduce((best, current) => 
+                current.successRate > best.successRate ? current : best
+            );
+            
+            summaryContent.innerHTML = `
+                <p><strong>Maximum Stable Concurrency:</strong> ${maxStableConcurrency} requests (≥95% success rate)</p>
+                <p><strong>Highest Tested Concurrency:</strong> ${lastResult.concurrency} requests (${lastResult.successRate.toFixed(2)}% success rate)</p>
+                <p><strong>Best Performance:</strong> ${bestResult.concurrency} concurrent requests with ${bestResult.successRate.toFixed(2)}% success rate and ${bestResult.avgResponseTime}ms average response time</p>
+                <p><strong>Total Tests Completed:</strong> ${results.length}</p>
+                <p><strong>Performance Verdict:</strong> ${maxStableConcurrency >= 1000 ? 'Excellent' : maxStableConcurrency >= 500 ? 'Good' : maxStableConcurrency >= 250 ? 'Fair' : 'Limited'} performance characteristics</p>
+            `;
+            
+            summaryDiv.style.display = 'block';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	
 	"github.com/gin-gonic/gin"
 	"github.com/gogolook/task-api/handler/task"
 	"github.com/gogolook/task-api/storage"
@@ -34,6 +36,11 @@ func main() {
 	r.POST("/tasks", taskHandler.CreateTask)
 	r.PUT("/tasks/:id", taskHandler.UpdateTask)
 	r.DELETE("/tasks/:id", taskHandler.DeleteTask)
+	
+	// 健康檢查 endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	r.Run(":8080")
 }
