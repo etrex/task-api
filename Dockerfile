@@ -1,5 +1,5 @@
-# 使用 Go 1.18 官方映像檔作為建置環境
-FROM golang:1.18-alpine AS builder
+# 使用 Go 1.23 官方映像檔作為建置環境
+FROM golang:1.23-alpine AS builder
 
 # 設定工作目錄
 WORKDIR /app
