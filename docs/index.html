@@ -340,8 +340,7 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            testApiConnection();
-            loadTasks();
+            loadTasks(); // 載入任務時會自動測試連線
             
             // Enter 鍵新增任務
             document.getElementById('taskName').addEventListener('keypress', function(e) {
@@ -415,19 +414,6 @@
             }
         }
 
-        // 測試 API 連線
-        async function testApiConnection() {
-            try {
-                const result = await apiRequest('GET', `${API_BASE}/tasks`);
-                if (result.ok) {
-                    updateApiStatus('success', 'API 連線成功');
-                } else {
-                    updateApiStatus('error', `API 連線失敗 (${result.status})`);
-                }
-            } catch (error) {
-                updateApiStatus('error', `API 連線失敗: ${error.message}`);
-            }
-        }
 
         // 更新 API 狀態
         function updateApiStatus(status, message) {
