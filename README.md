@@ -134,7 +134,7 @@ Run comprehensive performance tests with detailed monitoring:
 go run main.go &
 
 # Run stress test suite
-go run stress_benchmark.go
+go run benchmark/stress_benchmark.go
 ```
 
 The stress test includes:

@@ -88,7 +88,7 @@ type TestResult struct {
 }
 
 func main() {
-	fmt.Println("=== Task API 壓力測試 ===\n")
+	fmt.Println("=== Task API 壓力測試 ===")
 	
 	// 1. 直接測試 Storage 層
 	fmt.Println("1. Storage 層壓力測試")
