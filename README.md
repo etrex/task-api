@@ -2,6 +2,14 @@
 
 A RESTful task management API built with Go 1.18 and Gin framework.
 
+## Live Demo
+
+This project is automatically deployed to Google Cloud Run using GitHub Actions:
+- **API Backend**: https://task-api-fdrvii3bmq-de.a.run.app
+- **Frontend Interface**: https://etrex.github.io/task-api/
+
+The backend API is continuously deployed to GCP Cloud Run whenever changes are pushed to the main branch. The frontend is a single-page application hosted on GitHub Pages that provides a web interface for testing and interacting with the API.
+
 ## Features
 
 - Create, read, update, and delete tasks
