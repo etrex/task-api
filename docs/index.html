@@ -187,6 +187,56 @@
             color: #64748b;
             margin-top: 5px;
         }
+
+        .log-container {
+            background: #1f2937;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #f3f4f6;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #3b82f6;
+            background: #374151;
+        }
+
+        .log-timestamp {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+
+        .log-method {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .log-url {
+            color: #60a5fa;
+            word-break: break-all;
+        }
+
+        .log-body {
+            color: #fbbf24;
+            margin-top: 5px;
+        }
+
+        .log-response {
+            color: #34d399;
+            margin-top: 5px;
+        }
+
+        .log-error {
+            color: #f87171;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -227,6 +277,11 @@
                 <h3>任務列表</h3>
                 <div id="tasksList"></div>
             </div>
+
+            <div class="log-container">
+                <h3>HTTP 請求日誌</h3>
+                <div id="requestLog"></div>
+            </div>
         </div>
     </div>
 
@@ -237,6 +292,7 @@
         // 狀態管理
         let tasks = [];
         let isLoading = false;
+        let requestId = 0;
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -251,14 +307,77 @@
             });
         });
 
+        // 日誌記錄功能
+        function logRequest(method, url, body = null, response = null, error = null) {
+            requestId++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = document.getElementById('requestLog');
+            
+            let logEntry = `
+                <div class="log-entry">
+                    <div class="log-timestamp">[${timestamp}] Request #${requestId}</div>
+                    <div><span class="log-method">${method}</span> <span class="log-url">${url}</span></div>
+            `;
+            
+            if (body) {
+                logEntry += `<div class="log-body">Body: ${JSON.stringify(body)}</div>`;
+            }
+            
+            if (response) {
+                logEntry += `<div class="log-response">Response: ${JSON.stringify(response)}</div>`;
+            }
+            
+            if (error) {
+                logEntry += `<div class="log-error">Error: ${error}</div>`;
+            }
+            
+            logEntry += '</div>';
+            
+            logContainer.innerHTML = logEntry + logContainer.innerHTML;
+            
+            // 限制日誌條目數量
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 20) {
+                for (let i = 20; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        // 封裝 fetch 請求
+        async function apiRequest(method, url, body = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                const responseData = response.ok ? await response.json() : null;
+                
+                logRequest(method, url, body, responseData, response.ok ? null : `HTTP ${response.status}`);
+                
+                return { ok: response.ok, status: response.status, data: responseData };
+            } catch (error) {
+                logRequest(method, url, body, null, error.message);
+                throw error;
+            }
+        }
+
         // 測試 API 連線
         async function testApiConnection() {
             try {
-                const response = await fetch(`${API_BASE}/tasks`);
-                if (response.ok) {
+                const result = await apiRequest('GET', `${API_BASE}/tasks`);
+                if (result.ok) {
                     updateApiStatus('success', 'API 連線成功');
                 } else {
-                    updateApiStatus('error', `API 連線失敗 (${response.status})`);
+                    updateApiStatus('error', `API 連線失敗 (${result.status})`);
                 }
             } catch (error) {
                 updateApiStatus('error', `API 連線失敗: ${error.message}`);
@@ -281,14 +400,14 @@
             if (!wasLoading) updateButtonState(true);
             
             try {
-                const response = await fetch(`${API_BASE}/tasks`);
-                if (response.ok) {
-                    tasks = await response.json();
+                const result = await apiRequest('GET', `${API_BASE}/tasks`);
+                if (result.ok) {
+                    tasks = result.data;
                     renderTasks();
                     updateStats();
                     updateApiStatus('success', `已載入 ${tasks.length} 個任務`);
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${result.status}`);
                 }
             } catch (error) {
                 updateApiStatus('error', `載入失敗: ${error.message}`);
@@ -315,24 +434,18 @@
             updateButtonState(true);
             
             try {
-                const response = await fetch(`${API_BASE}/tasks`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        status: 0
-                    })
+                const result = await apiRequest('POST', `${API_BASE}/tasks`, {
+                    name: name,
+                    status: 0
                 });
 
-                if (response.ok) {
+                if (result.ok) {
                     nameInput.value = '';
                     isLoading = false;
                     await loadTasks(true);
                     updateApiStatus('success', '任務新增成功');
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${result.status}`);
                 }
             } catch (error) {
                 updateApiStatus('error', `新增失敗: ${error.message}`);
@@ -354,23 +467,17 @@
                 const task = tasks.find(t => t.id === taskId);
                 if (!task) throw new Error('任務不存在');
 
-                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: task.name,
-                        status: newStatus
-                    })
+                const result = await apiRequest('PUT', `${API_BASE}/tasks/${taskId}`, {
+                    name: task.name,
+                    status: newStatus
                 });
 
-                if (response.ok) {
+                if (result.ok) {
                     isLoading = false;
                     await loadTasks(true);
                     updateApiStatus('success', '任務狀態更新成功');
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${result.status}`);
                 }
             } catch (error) {
                 updateApiStatus('error', `更新失敗: ${error.message}`);
@@ -383,24 +490,20 @@
 
         // 刪除任務
         async function deleteTask(taskId) {
-            if (!confirm('確定要刪除這個任務嗎？')) return;
-            
             if (isLoading) return;
             
             isLoading = true;
             updateButtonState(true);
             
             try {
-                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
-                    method: 'DELETE'
-                });
+                const result = await apiRequest('DELETE', `${API_BASE}/tasks/${taskId}`);
 
-                if (response.ok) {
+                if (result.ok) {
                     isLoading = false;
                     await loadTasks(true);
                     updateApiStatus('success', '任務刪除成功');
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${result.status}`);
                 }
             } catch (error) {
                 updateApiStatus('error', `刪除失敗: ${error.message}`);
