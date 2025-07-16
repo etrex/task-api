@@ -306,7 +306,7 @@
                             <th>失敗</th>
                             <th>成功率</th>
                             <th>平均響應時間</th>
-                            <th>錯誤類型</th>
+                            <th>錯誤統計</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">
@@ -435,11 +435,25 @@
                             signal: AbortSignal.timeout(timeout)
                         });
                     } else {
-                        requestPromise = fetch(`${apiUrl}/tasks/test-id`, {
-                            method: 'PUT',
+                        // PUT 請求應該先建立一個任務，然後更新它
+                        requestPromise = fetch(`${apiUrl}/tasks`, {
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(task),
                             signal: AbortSignal.timeout(timeout)
+                        }).then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            }
+                            throw new Error(`POST failed: ${response.status}`);
+                        }).then(createdTask => {
+                            // 更新剛建立的任務
+                            return fetch(`${apiUrl}/tasks/${createdTask.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ...task, status: 1 }),
+                                signal: AbortSignal.timeout(timeout)
+                            });
                         });
                     }
                 } else if (testType === 'get') {
@@ -455,11 +469,25 @@
                         signal: AbortSignal.timeout(timeout)
                     });
                 } else if (testType === 'put') {
-                    requestPromise = fetch(`${apiUrl}/tasks/test-id`, {
-                        method: 'PUT',
+                    // PUT 請求應該先建立一個任務，然後更新它
+                    requestPromise = fetch(`${apiUrl}/tasks`, {
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(task),
                         signal: AbortSignal.timeout(timeout)
+                    }).then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error(`POST failed: ${response.status}`);
+                    }).then(createdTask => {
+                        // 更新剛建立的任務
+                        return fetch(`${apiUrl}/tasks/${createdTask.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...task, status: 1 }),
+                            signal: AbortSignal.timeout(timeout)
+                        });
                     });
                 }
                 
@@ -467,11 +495,11 @@
                     requestPromise.then(response => ({ 
                         success: response.ok, 
                         status: response.status,
-                        error: null 
+                        error: response.ok ? null : `HTTP ${response.status}` 
                     })).catch(error => ({ 
                         success: false, 
                         status: 0,
-                        error: error.name 
+                        error: error.message || error.name 
                     }))
                 );
             }
@@ -482,11 +510,22 @@
             const successful = responses.filter(r => r.success).length;
             const failed = responses.length - successful;
             const avgResponseTime = endTime - startTime;
+            
+            // 統計錯誤類型
             const errorTypes = responses.filter(r => !r.success).map(r => r.error);
-            const mostCommonError = errorTypes.length > 0 ? 
-                errorTypes.reduce((a, b, i, arr) => 
-                    arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
-                ) : null;
+            const errorStats = {};
+            errorTypes.forEach(error => {
+                errorStats[error] = (errorStats[error] || 0) + 1;
+            });
+            
+            // 找出最常見的錯誤
+            const mostCommonError = Object.keys(errorStats).length > 0 ? 
+                Object.keys(errorStats).reduce((a, b) => errorStats[a] > errorStats[b] ? a : b) : null;
+            
+            // 格式化錯誤統計
+            const errorSummary = Object.keys(errorStats).length > 0 ? 
+                Object.entries(errorStats).map(([error, count]) => `${error}(${count})`).join(', ') : 
+                null;
             
             return {
                 concurrency,
@@ -495,7 +534,8 @@
                 failed,
                 successRate: (successful / concurrency) * 100,
                 avgResponseTime,
-                errorType: mostCommonError
+                errorType: mostCommonError,
+                errorSummary: errorSummary
             };
         }
 
@@ -517,7 +557,7 @@
                 <td>${result.failed}</td>
                 <td class="success-rate ${successRateClass}">${result.successRate.toFixed(2)}%</td>
                 <td>${result.avgResponseTime}ms</td>
-                <td>${result.errorType || 'N/A'}</td>
+                <td>${result.errorSummary || 'N/A'}</td>
             `;
             tbody.appendChild(row);
             
@@ -561,7 +601,29 @@
             const statusDiv = document.getElementById('status');
             statusDiv.style.display = 'block';
             statusDiv.className = 'status running';
-            statusDiv.textContent = '正在執行性能測試...';
+            statusDiv.textContent = '正在準備測試環境...';
+            
+            // 預先建立一些測試資料，避免 PUT 請求失敗
+            try {
+                const prepTasks = [];
+                for (let i = 0; i < 10; i++) {
+                    prepTasks.push(
+                        fetch(`${apiUrl}/tasks`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: `準備測試任務 ${i}`,
+                                status: 0
+                            })
+                        })
+                    );
+                }
+                await Promise.all(prepTasks);
+                statusDiv.textContent = '正在執行性能測試...';
+            } catch (error) {
+                console.warn('預先建立測試資料失敗:', error);
+                statusDiv.textContent = '正在執行性能測試...';
+            }
             
             // Run tests
             for (let concurrency = startConcurrency; concurrency <= maxConcurrency; concurrency += increment) {
