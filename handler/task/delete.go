@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Param id path string true "Task ID"
 // @Success 200 {object} model.MessageResponse
-// @Failure 404 {object} model.ErrorResponse
+// @Failure 404 {object} model.NotFoundResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /tasks/{id} [delete]
 func (h *TaskHandler) DeleteTask(c *gin.Context) {

@@ -18,8 +18,8 @@ import (
 // @Param id path string true "Task ID"
 // @Param task body model.TaskRequest true "Task data"
 // @Success 200 {object} model.Task
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 404 {object} model.ErrorResponse
+// @Failure 400 {object} model.BadRequestResponse
+// @Failure 404 {object} model.NotFoundResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /tasks/{id} [put]
 func (h *TaskHandler) UpdateTask(c *gin.Context) {

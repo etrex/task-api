@@ -15,7 +15,7 @@ import (
 // @Produce json
 // @Param id path string true "Task ID"
 // @Success 200 {object} model.Task
-// @Failure 404 {object} model.ErrorResponse
+// @Failure 404 {object} model.NotFoundResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /tasks/{id} [get]
 func (h *TaskHandler) GetTask(c *gin.Context) {

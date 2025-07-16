@@ -15,7 +15,7 @@ import (
 // @Produce json
 // @Param task body model.TaskRequest true "Task data"
 // @Success 201 {object} model.Task
-// @Failure 400 {object} model.ErrorResponse
+// @Failure 400 {object} model.BadRequestResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /tasks [post]
 func (h *TaskHandler) CreateTask(c *gin.Context) {
