@@ -137,14 +137,38 @@
             flex: 1;
         }
 
-        .task-name {
+        .task-uuid {
             font-weight: 500;
-            margin-bottom: 5px;
-        }
-
-        .task-status {
+            margin-bottom: 10px;
             font-size: 14px;
             color: #6b7280;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .task-field {
+            margin-bottom: 8px;
+        }
+
+        .task-field label {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 3px;
+        }
+
+        .task-field input, .task-field select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .task-field input:focus, .task-field select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
 
         .task-actions {
@@ -533,6 +557,55 @@
             } catch (error) {
                 updateApiStatus('error', `更新失敗: ${error.message}`);
                 console.error('更新任務失敗:', error);
+                // 重新渲染以恢復原始狀態
+                renderTasks();
+            } finally {
+                isLoading = false;
+                updateButtonState(false);
+            }
+        }
+
+        // 更新任務名稱
+        async function updateTaskName(taskId, newName) {
+            if (isLoading) return;
+            
+            const trimmedName = newName.trim();
+            if (!trimmedName) {
+                alert('任務名稱不能為空');
+                renderTasks(); // 恢復原始值
+                return;
+            }
+            
+            isLoading = true;
+            updateButtonState(true);
+            
+            try {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) throw new Error('任務不存在');
+
+                const result = await apiRequest('PUT', `${API_BASE}/tasks/${taskId}`, {
+                    name: trimmedName,
+                    status: task.status
+                });
+
+                if (result.ok) {
+                    // 直接更新本地記憶體，不重新 get list
+                    const taskIndex = tasks.findIndex(t => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex].name = trimmedName;
+                    }
+                    
+                    renderTasks();
+                    updateStats();
+                    updateApiStatus('success', '任務名稱更新成功');
+                } else {
+                    throw new Error(`HTTP ${result.status}`);
+                }
+            } catch (error) {
+                updateApiStatus('error', `更新失敗: ${error.message}`);
+                console.error('更新任務失敗:', error);
+                // 重新渲染以恢復原始狀態
+                renderTasks();
             } finally {
                 isLoading = false;
                 updateButtonState(false);
@@ -633,16 +706,22 @@
             container.innerHTML = tasks.map(task => `
                 <div class="task-item">
                     <div class="task-info">
-                        <div class="task-name">${escapeHtml(task.name)}</div>
-                        <div class="task-status">
-                            狀態: ${task.status === 1 ? '✅ 已完成' : '⏳ 待處理'}
+                        <div class="task-uuid">ID: ${task.id}</div>
+                        <div class="task-field">
+                            <label>任務名稱</label>
+                            <input type="text" value="${escapeHtml(task.name)}" 
+                                   onchange="updateTaskName('${task.id}', this.value)" 
+                                   placeholder="輸入任務名稱...">
+                        </div>
+                        <div class="task-field">
+                            <label>狀態</label>
+                            <select onchange="updateTaskStatus('${task.id}', parseInt(this.value))">
+                                <option value="0" ${task.status === 0 ? 'selected' : ''}>待處理</option>
+                                <option value="1" ${task.status === 1 ? 'selected' : ''}>已完成</option>
+                            </select>
                         </div>
                     </div>
                     <div class="task-actions">
-                        ${task.status === 0 ? 
-                            `<button class="btn-small btn-success" onclick="updateTaskStatus('${task.id}', 1)">完成</button>` : 
-                            `<button class="btn-small" onclick="updateTaskStatus('${task.id}', 0)">重新開啟</button>`
-                        }
                         <button class="btn-small" onclick="reloadTask('${task.id}')">重新載入</button>
                         <button class="btn-small btn-danger" onclick="deleteTask('${task.id}')">刪除</button>
                     </div>
