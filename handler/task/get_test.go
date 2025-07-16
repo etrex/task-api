@@ -52,12 +52,9 @@ func TestGetTask(t *testing.T) {
 			// 如果有設定任務，先創建它
 			if tt.setupTask != nil {
 				storage.Create(tt.setupTask)
-				// 獲取實際生成的 ID
-				tasks := storage.List()
-				if len(tasks) > 0 {
-					actualTaskID = tasks[0].ID
-					expectedBody = `{"id":"` + actualTaskID + `","name":"Test Task","status":0}`
-				}
+				// Create 會直接修改 task 物件，設定新的 ID
+				actualTaskID = tt.setupTask.ID
+				expectedBody = `{"id":"` + actualTaskID + `","name":"Test Task","status":0}`
 			} else {
 				actualTaskID = tt.taskID
 				expectedBody = tt.expectedBody
