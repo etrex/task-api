@@ -204,8 +204,8 @@
         }
 
         .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            display: flex;
+            justify-content: flex-start;
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -216,6 +216,7 @@
             border-radius: 6px;
             text-align: center;
             border: 1px solid #e2e8f0;
+            min-width: 150px;
         }
 
         .stat-number {
@@ -375,14 +376,6 @@
                     <div class="stat-card">
                         <div class="stat-number" id="totalTasks">0</div>
                         <div class="stat-label">總任務數</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="completedTasks">0</div>
-                        <div class="stat-label">已完成</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pendingTasks">0</div>
-                        <div class="stat-label">待處理</div>
                     </div>
                 </div>
 
@@ -794,12 +787,7 @@
         // 更新統計資訊
         function updateStats() {
             const total = totalTasks; // 使用全域的總任務數
-            const completed = tasks.filter(t => t.status === 1).length;
-            const pending = tasks.filter(t => t.status === 0).length;
-
             document.getElementById('totalTasks').textContent = total;
-            document.getElementById('completedTasks').textContent = completed;
-            document.getElementById('pendingTasks').textContent = pending;
         }
 
         // 渲染分頁控制
