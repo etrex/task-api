@@ -13,7 +13,7 @@ The backend API is continuously deployed to GCP Cloud Run whenever changes are p
 ## Features
 
 - Create, read, update, and delete tasks
-- High-performance in-memory storage with O(1) operations
+- High-performance in-memory storage with O(1) operations (based on time complexity analysis)
 - Optimized pagination with fixed page size (100 items)
 - RESTful API design
 - Comprehensive unit tests
@@ -22,9 +22,12 @@ The backend API is continuously deployed to GCP Cloud Run whenever changes are p
 ## API Endpoints
 
 - `GET /tasks?page=1` - List tasks with pagination (100 items per page)
+- `GET /tasks/{id}` - Get a specific task by ID
 - `POST /tasks` - Create a new task
 - `PUT /tasks/{id}` - Update a task
 - `DELETE /tasks/{id}` - Delete a task
+- `DELETE /tasks` - Delete all tasks (testing utility)
+- `GET /health` - Health check endpoint
 
 ### Pagination
 
@@ -180,16 +183,16 @@ type MemoryStorage struct {
 
 #### Key Optimizations
 
-1. **Insertion Order Preservation**: Tasks are stored in the order they were created, eliminating the need for sorting
+1. **Sequential Storage**: Tasks are stored in a slice to enable ordered pagination (maps are unordered)
 2. **Efficient Deletion**: Uses the "swap-and-pop" technique - moves the last element to the deleted position to avoid O(n) array shifting
-3. **Fixed-Size Pagination**: Server-controlled pagination with 100 items per page ensures consistent O(100) performance
-4. **Memory Locality**: Sequential data access in the slice provides excellent CPU cache performance
+3. **Fixed-Size Pagination**: Server-controlled pagination with 100 items per page
+4. **Fast Lookup**: UUID-to-index mapping via hash map for O(1) access
 
 #### Storage Benefits
 
-- **Predictable Performance**: All operations have guaranteed time complexity
+- **Predictable Performance**: Operations have defined time complexity (theoretical analysis)
 - **Memory Efficient**: No duplicate data storage or complex tree structures
-- **Scalable**: Performance remains consistent regardless of data size
+- **Scalable**: Performance tested consistent up to current test limits
 - **Thread-Safe**: Full concurrent read/write support with minimal locking
 
 ### Pagination Strategy
@@ -199,21 +202,30 @@ The API implements server-controlled pagination to optimize performance:
 - **Fixed Page Size**: 100 items per page (non-configurable by clients)
 - **Stateless**: Each page request is independent
 - **Efficient**: Direct slice access without scanning entire dataset
-- **Consistent**: Response time remains constant regardless of total data size
+- **Consistent**: Response time observed stable in current testing
 
 ## Performance Benchmarks
 
-This API has been thoroughly tested for high-concurrency performance with excellent results.
+This API has been tested for high-concurrency performance.
 
 **Note**: The performance metrics below were obtained from local testing with `kern.ipc.somaxconn=1024`. Cloud Run performance may vary due to different system configurations and network latency.
 
 ### Key Performance Metrics
+
+#### Local Testing Results (kern.ipc.somaxconn=1024)
 - **Maximum Stable Concurrency**: 3,000 concurrent requests with 99.83% success rate
 - **Average Response Time**: 1.67ms at 3,000 concurrent requests
 - **Storage Layer**: 100,000 concurrent operations with 100% success rate
 - **Memory Usage**: Stable at 50-58MB under maximum load
 - **CPU Utilization**: Efficient multi-core usage (195% on 8-core system)
 - **Pagination Performance**: Consistent O(100) response time regardless of dataset size
+
+#### Cloud Run Production Testing (Single Instance)
+- **GET Operations**: Maximum ~500 concurrent requests with 100% success rate
+- **POST/PUT Operations**: Maximum ~1,300 concurrent requests with 100% success rate
+- **Performance Independence**: GET performance remains consistent regardless of data volume
+- **Failure Pattern**: "Failed to fetch" errors appear when exceeding connection limits
+- **Single Instance Constraint**: Memory storage requires max-instances=1 for data consistency
 
 ### Stress Testing
 
@@ -250,26 +262,48 @@ Features:
 
 The web benchmark automatically tests against the live API at `https://task-api.etrex.tw` and provides the same progressive load testing as the Go version, but with a visual interface.
 
+#### Operation-Specific Performance Characteristics
+
+**GET Operations (Read-Heavy)**:
+- Maximum concurrency: ~500 requests
+- Performance remains consistent regardless of data volume
+- Same limit observed with empty datasets
+
+**POST/PUT Operations (Write-Heavy)**:
+- Maximum concurrency: ~1,300 requests
+- Higher throughput compared to GET operations
+
+
 ### System Requirements for Optimal Performance
 
 **⚠️ Important**: To achieve maximum performance, the system TCP listen queue must be increased:
 
 ```bash
-# Check current setting (default is usually 128)
+# Check current setting
 sysctl kern.ipc.somaxconn
 
 # Increase to 1024 for optimal performance
 sudo sysctl -w kern.ipc.somaxconn=1024
 ```
 
-**Without this adjustment**, you'll encounter connection limits at around 240 concurrent requests due to TCP connection reset errors.
+**Without this adjustment**, connection limits were observed at around 240 concurrent requests in our testing environment.
 
 ### Performance Bottlenecks Identified
 
+#### Local Environment
 1. **240 concurrent requests** - Limited by default `kern.ipc.somaxconn=128`
-2. **3,000+ concurrent requests** - Limited by TCP connection establishment rate, not application performance
-3. **Application layer** - No bottlenecks found; excellent performance characteristics
+2. **3,000+ concurrent requests** - Observed limits in TCP connection establishment
+3. **Application layer** - No bottlenecks observed in current testing
+
+#### Cloud Run Environment
+1. **GET Operations**: Maximum ~500 concurrent requests
+2. **POST/PUT Operations**: Maximum ~1,300 concurrent requests
+3. **Single Instance**: Memory storage requires max-instances=1 for data consistency
 
 ### Conclusion
 
-The Task API demonstrates excellent performance characteristics with no application-level bottlenecks. The identified limits are system-level TCP constraints, indicating a well-optimized application design.
+The Task API demonstrates good performance characteristics in testing. The observed performance limits are:
+- **Local testing**: Up to 3,000 concurrent requests (with system configuration)
+- **Cloud Run testing**: 500 concurrent GET requests, 1,300 concurrent POST/PUT requests
+
+The in-memory storage implementation shows consistent O(1) performance (theoretical analysis) in current testing, suitable for applications within the identified concurrency limits.
