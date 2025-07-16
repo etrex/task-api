@@ -3,6 +3,7 @@ package task
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogolook/task-api/model"
@@ -30,6 +31,12 @@ func validateTaskRequest(c *gin.Context, task *model.Task) error {
 	if !ok {
 		return errors.New("name must be a string")
 	}
+	
+	// 檢查 name 不能為空字串或僅包含空白字元
+	if strings.TrimSpace(name) == "" {
+		return errors.New("name cannot be empty")
+	}
+	
 	task.Name = name
 
 	status, ok := raw["status"].(float64)

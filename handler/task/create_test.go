@@ -107,6 +107,26 @@ func TestCreateTask(t *testing.T) {
 			expectedBody:   `{"error":`,
 		},
 		{
+			name: "name 為空字串",
+			requestBody: map[string]interface{}{
+				"name":   "",
+				"status": 0,
+			},
+			mockStorage: &storage.MockStorage{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":`,
+		},
+		{
+			name: "name 為純空白字串",
+			requestBody: map[string]interface{}{
+				"name":   "   ",
+				"status": 0,
+			},
+			mockStorage: &storage.MockStorage{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":`,
+		},
+		{
 			name: "Storage 錯誤",
 			requestBody: map[string]interface{}{
 				"name":   "Test Task",

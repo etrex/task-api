@@ -116,6 +116,28 @@ func TestUpdateTask(t *testing.T) {
 			expectedBody:   `{"error":`,
 		},
 		{
+			name:   "name 為空字串",
+			taskID: "test-id-123",
+			requestBody: map[string]interface{}{
+				"name":   "",
+				"status": 1,
+			},
+			mockStorage: &storage.MockStorage{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":`,
+		},
+		{
+			name:   "name 為純空白字串",
+			taskID: "test-id-123",
+			requestBody: map[string]interface{}{
+				"name":   "   ",
+				"status": 1,
+			},
+			mockStorage: &storage.MockStorage{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":`,
+		},
+		{
 			name:   "資料不存在",
 			taskID: "non-existing-id",
 			requestBody: map[string]interface{}{
