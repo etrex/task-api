@@ -5,7 +5,7 @@ A RESTful task management API built with Go 1.18 and Gin framework.
 ## Live Demo
 
 This project is automatically deployed to Google Cloud Run using GitHub Actions:
-- **API Backend**: https://task-api-fdrvii3bmq-de.a.run.app
+- **API Backend**: https://task-api.etrex.tw
 - **Frontend Interface**: https://etrex.github.io/task-api/
 
 The backend API is continuously deployed to GCP Cloud Run whenever changes are pushed to the main branch. The frontend is a single-page application hosted on GitHub Pages that provides a web interface for testing and interacting with the API.
@@ -82,26 +82,30 @@ go test ./... -cover
 
 ## Example Usage
 
+You can test the API directly using the live deployment:
+
 ### Create a task
 ```bash
-curl -X POST http://localhost:8080/tasks \
+curl -X POST https://task-api.etrex.tw/tasks \
   -H "Content-Type: application/json" \
   -d '{"name":"Learn Go","status":0}'
 ```
 
 ### List all tasks
 ```bash
-curl http://localhost:8080/tasks
+curl https://task-api.etrex.tw/tasks
 ```
 
 ### Update a task
 ```bash
-curl -X PUT http://localhost:8080/tasks/{id} \
+curl -X PUT https://task-api.etrex.tw/tasks/{id} \
   -H "Content-Type: application/json" \
   -d '{"name":"Learn Go","status":1}'
 ```
 
 ### Delete a task
 ```bash
-curl -X DELETE http://localhost:8080/tasks/{id}
+curl -X DELETE https://task-api.etrex.tw/tasks/{id}
 ```
+
+> **Note**: Replace `{id}` with the actual task ID returned from the create or list operations.
