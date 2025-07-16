@@ -1,205 +1,293 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task API - Performance Benchmark</title>
+    <title>Task API - 性能測試工具</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
             padding: 20px;
-            background-color: #f5f5f5;
         }
+
         .container {
+            max-width: 1400px;
+            margin: 0 auto;
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .config-section {
-            background: #f8f9fa;
-            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .config-item {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
-        label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        input, select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background: #007bff;
+
+        .header {
+            background: #2563eb;
             color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px 5px;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        .stop-btn {
-            background: #dc3545;
-        }
-        .stop-btn:hover {
-            background: #c82333;
-        }
-        .status {
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .status.running {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status.stopped {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .status.completed {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .results-table th, .results-table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        .results-table th {
-            background: #f8f9fa;
-            font-weight: bold;
-        }
-        .results-table tr:nth-child(even) {
-            background: #f9f9f9;
-        }
-        .success-rate {
-            font-weight: bold;
-        }
-        .success-rate.good {
-            color: #28a745;
-        }
-        .success-rate.warning {
-            color: #ffc107;
-        }
-        .success-rate.bad {
-            color: #dc3545;
-        }
-        .chart-container {
-            margin: 30px 0;
-            height: 400px;
-        }
-        .summary {
-            background: #e9ecef;
             padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
+            text-align: center;
         }
+
+        .header h1 {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .header a {
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
         .warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
             color: #856404;
             padding: 15px;
             border-radius: 6px;
-            margin: 20px 0;
+            margin-bottom: 20px;
         }
+
         .warning strong {
             color: #d63384;
+        }
+
+        .config-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .stop-btn {
+            background: #dc2626;
+        }
+
+        .stop-btn:hover {
+            background: #b91c1c;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .status.running {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status.stopped {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .status.completed {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .chart-container {
+            margin: 30px 0;
+            height: 400px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .results-table th, .results-table td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .results-table th {
+            background: #f8fafc;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .results-table tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .success-rate {
+            font-weight: bold;
+        }
+
+        .success-rate.good {
+            color: #059669;
+        }
+
+        .success-rate.warning {
+            color: #d97706;
+        }
+
+        .success-rate.bad {
+            color: #dc2626;
+        }
+
+        .summary {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        @media (max-width: 768px) {
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Task API Performance Benchmark</h1>
-        <div style="text-align: center; margin-bottom: 20px;">
-            <a href="index.html" style="color: #007bff; text-decoration: none; font-weight: bold;">
-                ← 回到任務管理系統
-            </a>
+        <div class="header">
+            <h1>🚀 Task API 性能測試工具</h1>
+            <p>測試 API 在高並發情況下的性能表現</p>
+            <div>
+                <a href="index.html">← 回到任務管理系統</a>
+            </div>
         </div>
         
-        <div class="warning">
-            <strong>⚠️ Cloud Run Configuration:</strong> 
-            This test is designed for Cloud Run instances with max-instances=1 and concurrency=1000. 
-            Make sure auto-scaling is disabled to get accurate single-instance performance metrics.
-        </div>
+        <div class="content">
+            <div class="warning">
+                <strong>⚠️ Cloud Run 配置說明：</strong> 
+                此測試專為 Cloud Run 實例設計，需要設定 max-instances=1 和 concurrency=1000。
+                請確保已停用自動擴展功能，以獲得準確的單一實例性能指標。
+            </div>
 
-        <div class="config-section">
-            <h3>Test Configuration</h3>
-            <div class="config-grid">
-                <div class="config-item">
-                    <label for="apiUrl">API Base URL</label>
-                    <input type="text" id="apiUrl" value="https://task-api.etrex.tw" placeholder="https://task-api.etrex.tw">
+            <div class="config-section">
+                <h3>測試配置</h3>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="apiUrl">API 基礎網址</label>
+                        <input type="text" id="apiUrl" value="https://task-api.etrex.tw" placeholder="https://task-api.etrex.tw">
+                    </div>
+                    <div class="config-item">
+                        <label for="startConcurrency">起始並發數</label>
+                        <input type="number" id="startConcurrency" value="10" min="1" max="1000">
+                    </div>
+                    <div class="config-item">
+                        <label for="maxConcurrency">最大並發數</label>
+                        <input type="number" id="maxConcurrency" value="1000" min="1" max="5000">
+                    </div>
+                    <div class="config-item">
+                        <label for="increment">遞增步長</label>
+                        <input type="number" id="increment" value="25" min="1" max="100">
+                    </div>
+                    <div class="config-item">
+                        <label for="requestTimeout">請求超時 (毫秒)</label>
+                        <input type="number" id="requestTimeout" value="10000" min="1000" max="60000">
+                    </div>
+                    <div class="config-item">
+                        <label for="testType">測試類型</label>
+                        <select id="testType">
+                            <option value="mixed">混合 (GET/POST/PUT)</option>
+                            <option value="get">僅 GET</option>
+                            <option value="post">僅 POST</option>
+                            <option value="put">僅 PUT</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="config-item">
-                    <label for="startConcurrency">Start Concurrency</label>
-                    <input type="number" id="startConcurrency" value="10" min="1" max="1000">
-                </div>
-                <div class="config-item">
-                    <label for="maxConcurrency">Max Concurrency</label>
-                    <input type="number" id="maxConcurrency" value="1000" min="1" max="5000">
-                </div>
-                <div class="config-item">
-                    <label for="increment">Increment Step</label>
-                    <input type="number" id="increment" value="25" min="1" max="100">
-                </div>
-                <div class="config-item">
-                    <label for="requestTimeout">Request Timeout (ms)</label>
-                    <input type="number" id="requestTimeout" value="10000" min="1000" max="60000">
-                </div>
-                <div class="config-item">
-                    <label for="testType">Test Type</label>
-                    <select id="testType">
-                        <option value="mixed">Mixed (GET/POST/PUT)</option>
-                        <option value="get">GET Only</option>
-                        <option value="post">POST Only</option>
-                        <option value="put">PUT Only</option>
-                    </select>
+                <div>
+                    <button id="startBtn" onclick="startBenchmark()">開始測試</button>
+                    <button id="stopBtn" onclick="stopBenchmark()" disabled class="stop-btn">停止測試</button>
                 </div>
             </div>
-            <div>
-                <button id="startBtn" onclick="startBenchmark()">Start Benchmark</button>
-                <button id="stopBtn" onclick="stopBenchmark()" disabled class="stop-btn">Stop Benchmark</button>
-            </div>
-        </div>
 
         <div id="status" class="status" style="display: none;"></div>
 
@@ -207,28 +295,29 @@
             <canvas id="performanceChart"></canvas>
         </div>
 
-        <div id="results">
-            <h3>Test Results</h3>
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>Concurrency</th>
-                        <th>Total Requests</th>
-                        <th>Success</th>
-                        <th>Failed</th>
-                        <th>Success Rate</th>
-                        <th>Avg Response Time</th>
-                        <th>Error Type</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody">
-                </tbody>
-            </table>
-        </div>
+            <div id="results">
+                <h3>測試結果</h3>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>並發數</th>
+                            <th>總請求數</th>
+                            <th>成功</th>
+                            <th>失敗</th>
+                            <th>成功率</th>
+                            <th>平均響應時間</th>
+                            <th>錯誤類型</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
 
-        <div id="summary" class="summary" style="display: none;">
-            <h3>Performance Summary</h3>
-            <div id="summaryContent"></div>
+            <div id="summary" class="summary" style="display: none;">
+                <h3>性能摘要</h3>
+                <div id="summaryContent"></div>
+            </div>
         </div>
     </div>
 
@@ -247,14 +336,14 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Success Rate (%)',
+                        label: '成功率 (%)',
                         data: [],
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         tension: 0.1,
                         yAxisID: 'y'
                     }, {
-                        label: 'Avg Response Time (ms)',
+                        label: '平均響應時間 (ms)',
                         data: [],
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -268,7 +357,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Real-time Performance Metrics'
+                            text: '即時性能指標'
                         }
                     },
                     scales: {
@@ -276,7 +365,7 @@
                             display: true,
                             title: {
                                 display: true,
-                                text: 'Concurrency Level'
+                                text: '並發數'
                             }
                         },
                         y: {
@@ -285,7 +374,7 @@
                             position: 'left',
                             title: {
                                 display: true,
-                                text: 'Success Rate (%)'
+                                text: '成功率 (%)'
                             },
                             min: 0,
                             max: 100
@@ -296,7 +385,7 @@
                             position: 'right',
                             title: {
                                 display: true,
-                                text: 'Response Time (ms)'
+                                text: '響應時間 (ms)'
                             },
                             grid: {
                                 drawOnChartArea: false,
@@ -472,13 +561,13 @@
             const statusDiv = document.getElementById('status');
             statusDiv.style.display = 'block';
             statusDiv.className = 'status running';
-            statusDiv.textContent = 'Running benchmark...';
+            statusDiv.textContent = '正在執行性能測試...';
             
             // Run tests
             for (let concurrency = startConcurrency; concurrency <= maxConcurrency; concurrency += increment) {
                 if (shouldStop) break;
                 
-                statusDiv.textContent = `Testing ${concurrency} concurrent requests...`;
+                statusDiv.textContent = `正在測試 ${concurrency} 個同時請求...`;
                 
                 try {
                     const result = await executeRequests(apiUrl, concurrency, timeout, testType);
@@ -487,7 +576,7 @@
                     // Stop if success rate drops below 95%
                     if (result.successRate < 95) {
                         statusDiv.className = 'status completed';
-                        statusDiv.textContent = `Benchmark completed - Performance bottleneck found at ${concurrency} concurrency`;
+                        statusDiv.textContent = `測試完成 - 在 ${concurrency} 個並發時發現效能瓶頸`;
                         break;
                     }
                     
@@ -497,7 +586,7 @@
                 } catch (error) {
                     console.error('Error during benchmark:', error);
                     statusDiv.className = 'status stopped';
-                    statusDiv.textContent = 'Benchmark stopped due to error';
+                    statusDiv.textContent = '測試因錯誤而停止';
                     break;
                 }
             }
@@ -512,7 +601,7 @@
             
             if (!shouldStop && statusDiv.className !== 'status completed') {
                 statusDiv.className = 'status completed';
-                statusDiv.textContent = 'Benchmark completed successfully';
+                statusDiv.textContent = '測試順利完成';
             }
         }
 
@@ -521,7 +610,7 @@
             shouldStop = true;
             const statusDiv = document.getElementById('status');
             statusDiv.className = 'status stopped';
-            statusDiv.textContent = 'Benchmark stopped by user';
+            statusDiv.textContent = '測試已被使用者停止';
         }
 
         // Show summary
@@ -537,11 +626,11 @@
             );
             
             summaryContent.innerHTML = `
-                <p><strong>Maximum Stable Concurrency:</strong> ${maxStableConcurrency} requests (≥95% success rate)</p>
-                <p><strong>Highest Tested Concurrency:</strong> ${lastResult.concurrency} requests (${lastResult.successRate.toFixed(2)}% success rate)</p>
-                <p><strong>Best Performance:</strong> ${bestResult.concurrency} concurrent requests with ${bestResult.successRate.toFixed(2)}% success rate and ${bestResult.avgResponseTime}ms average response time</p>
-                <p><strong>Total Tests Completed:</strong> ${results.length}</p>
-                <p><strong>Performance Verdict:</strong> ${maxStableConcurrency >= 1000 ? 'Excellent' : maxStableConcurrency >= 500 ? 'Good' : maxStableConcurrency >= 250 ? 'Fair' : 'Limited'} performance characteristics</p>
+                <p><strong>最大穩定並發數：</strong> ${maxStableConcurrency} 個請求（≥95% 成功率）</p>
+                <p><strong>最高測試並發數：</strong> ${lastResult.concurrency} 個請求（${lastResult.successRate.toFixed(2)}% 成功率）</p>
+                <p><strong>最佳效能表現：</strong> ${bestResult.concurrency} 個並發請求，成功率 ${bestResult.successRate.toFixed(2)}%，平均響應時間 ${bestResult.avgResponseTime}ms</p>
+                <p><strong>完成測試總數：</strong> ${results.length} 次</p>
+                <p><strong>效能評級：</strong> ${maxStableConcurrency >= 1000 ? '優秀' : maxStableConcurrency >= 500 ? '良好' : maxStableConcurrency >= 250 ? '普通' : '有限'} 的效能特徵</p>
             `;
             
             summaryDiv.style.display = 'block';
