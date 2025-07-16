@@ -31,18 +31,18 @@ func NewPaginationParams(page int) PaginationParams {
 
 // PaginationResult 分頁結果
 type PaginationResult struct {
-	Data   []model.Task `json:"data"`
+	Data       []model.Task   `json:"data"`
 	Pagination PaginationInfo `json:"pagination"`
 }
 
 // PaginationInfo 分頁資訊
 type PaginationInfo struct {
-	Page     int  `json:"page"`
-	Limit    int  `json:"limit"`
-	Total    int  `json:"total"`
-	Pages    int  `json:"pages"`
-	HasNext  bool `json:"has_next"`
-	HasPrev  bool `json:"has_prev"`
+	Page    int  `json:"page" example:"1"`
+	Limit   int  `json:"limit" example:"100"`
+	Total   int  `json:"total" example:"150"`
+	Pages   int  `json:"pages" example:"2"`
+	HasNext bool `json:"has_next" example:"true"`
+	HasPrev bool `json:"has_prev" example:"false"`
 }
 
 type Storage interface {

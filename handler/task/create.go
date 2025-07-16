@@ -8,6 +8,16 @@ import (
 )
 
 // CreateTask 處理建立新資料的 HTTP 請求
+// @Summary Create a new task
+// @Description Create a new task with name and status
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param task body model.TaskRequest true "Task data"
+// @Success 201 {object} model.Task
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /tasks [post]
 func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var task model.Task
 	

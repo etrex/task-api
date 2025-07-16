@@ -10,6 +10,18 @@ import (
 )
 
 // UpdateTask 處理更新指定資料的 HTTP 請求
+// @Summary Update a task
+// @Description Update a specific task by its ID
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param task body model.TaskRequest true "Task data"
+// @Success 200 {object} model.Task
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 404 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /tasks/{id} [put]
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	id := c.Param("id")
 	

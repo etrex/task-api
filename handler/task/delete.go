@@ -9,6 +9,16 @@ import (
 )
 
 // DeleteTask 處理刪除指定資料的 HTTP 請求
+// @Summary Delete a task
+// @Description Delete a specific task by its ID
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 200 {object} model.MessageResponse
+// @Failure 404 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /tasks/{id} [delete]
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
