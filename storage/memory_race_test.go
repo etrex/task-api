@@ -30,9 +30,12 @@ func TestMemoryStorage_RaceCondition(t *testing.T) {
 		wg.Wait()
 		
 		// 檢查任務數量
-		tasks := storage.List()
-		if len(tasks) != taskCount {
-			t.Errorf("預期 %d 個任務，實際得到 %d 個", taskCount, len(tasks))
+		result, err := storage.List(NewPaginationParams(1))
+		if err != nil {
+			t.Errorf("獲取任務列表失敗: %v", err)
+		}
+		if result.Pagination.Total != taskCount {
+			t.Errorf("預期 %d 個任務，實際得到 %d 個", taskCount, result.Pagination.Total)
 		}
 	})
 	
@@ -95,7 +98,7 @@ func TestMemoryStorage_RaceCondition(t *testing.T) {
 				defer wg.Done()
 				// 在遍歷 map 時，其他 goroutine 正在修改它
 				// 這可能導致 "concurrent map iteration and map write" panic
-				_ = storage.List()
+				_, _ = storage.List(NewPaginationParams(1))
 			}()
 		}
 		

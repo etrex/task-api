@@ -6,18 +6,28 @@ import (
 
 // MockStorage 用於測試的 mock storage
 type MockStorage struct {
-	ListFunc   func() []model.Task
+	ListFunc   func(params PaginationParams) (*PaginationResult, error)
 	GetFunc    func(id string) (*model.Task, error)
 	CreateFunc func(task *model.Task) error
 	UpdateFunc func(id string, task *model.Task) error
 	DeleteFunc func(id string) error
 }
 
-func (m *MockStorage) List() []model.Task {
+func (m *MockStorage) List(params PaginationParams) (*PaginationResult, error) {
 	if m.ListFunc != nil {
-		return m.ListFunc()
+		return m.ListFunc(params)
 	}
-	return []model.Task{}
+	return &PaginationResult{
+		Data: []model.Task{},
+		Pagination: PaginationInfo{
+			Page:    params.Page,
+			Limit:   params.Limit,
+			Total:   0,
+			Pages:   0,
+			HasNext: false,
+			HasPrev: false,
+		},
+	}, nil
 }
 
 func (m *MockStorage) Get(id string) (*model.Task, error) {

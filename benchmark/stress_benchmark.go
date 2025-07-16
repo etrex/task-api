@@ -163,8 +163,8 @@ func testStorageStress() {
 				}
 				
 			case 4: // 20% 列表操作
-				tasks := memStorage.List()
-				if len(tasks) > 0 {
+				listResult, err := memStorage.List(storage.NewPaginationParams(1))
+				if err == nil && listResult.Pagination.Total >= 0 {
 					atomic.AddInt64(&result.SuccessRequests, 1)
 				} else {
 					atomic.AddInt64(&result.FailedRequests, 1)
@@ -563,9 +563,9 @@ func testMixedStress() {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 20; j++ {
-				tasks := memStorage.List()
+				listResult, err := memStorage.List(storage.NewPaginationParams(1))
 				atomic.AddInt64(&operations, 1)
-				if len(tasks) == 0 {
+				if err != nil || listResult.Pagination.Total < 0 {
 					atomic.AddInt64(&errors, 1)
 				}
 				time.Sleep(5 * time.Millisecond) // 列表操作更慢

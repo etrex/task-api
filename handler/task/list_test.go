@@ -25,25 +25,45 @@ func TestListTasks(t *testing.T) {
 		{
 			name: "成功取得空清單",
 			mockStorage: &storage.MockStorage{
-				ListFunc: func() []model.Task {
-					return []model.Task{}
+				ListFunc: func(params storage.PaginationParams) (*storage.PaginationResult, error) {
+					return &storage.PaginationResult{
+						Data: []model.Task{},
+						Pagination: storage.PaginationInfo{
+							Page:    1,
+							Limit:   100,
+							Total:   0,
+							Pages:   0,
+							HasNext: false,
+							HasPrev: false,
+						},
+					}, nil
 				},
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   `[]`,
+			expectedBody:   `{"data":[],"pagination":{"page":1,"limit":100,"total":0,"pages":0,"has_next":false,"has_prev":false}}`,
 		},
 		{
 			name: "成功取得資料清單",
 			mockStorage: &storage.MockStorage{
-				ListFunc: func() []model.Task {
-					return []model.Task{
-						{ID: "1", Name: "Task 1", Status: 0},
-						{ID: "2", Name: "Task 2", Status: 1},
-					}
+				ListFunc: func(params storage.PaginationParams) (*storage.PaginationResult, error) {
+					return &storage.PaginationResult{
+						Data: []model.Task{
+							{ID: "1", Name: "Task 1", Status: 0},
+							{ID: "2", Name: "Task 2", Status: 1},
+						},
+						Pagination: storage.PaginationInfo{
+							Page:    params.Page,
+							Limit:   params.Limit,
+							Total:   2,
+							Pages:   1,
+							HasNext: false,
+							HasPrev: false,
+						},
+					}, nil
 				},
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   `[{"id":"1","name":"Task 1","status":0},{"id":"2","name":"Task 2","status":1}]`,
+			expectedBody:   `{"data":[{"id":"1","name":"Task 1","status":0},{"id":"2","name":"Task 2","status":1}],"pagination":{"page":1,"limit":100,"total":2,"pages":1,"has_next":false,"has_prev":false}}`,
 		},
 	}
 

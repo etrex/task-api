@@ -46,8 +46,13 @@ func TestMemoryStorage_List(t *testing.T) {
 	}
 
 	// 測試 List
-	result := storage.List()
-	assert.Len(t, result, 3)
+	result, err := storage.List(NewPaginationParams(1))
+	require.NoError(t, err)
+	assert.Len(t, result.Data, 3)
+	assert.Equal(t, 3, result.Pagination.Total)
+	assert.Equal(t, 1, result.Pagination.Pages)
+	assert.False(t, result.Pagination.HasNext)
+	assert.False(t, result.Pagination.HasPrev)
 }
 
 func TestMemoryStorage_Get(t *testing.T) {
