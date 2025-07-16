@@ -222,7 +222,6 @@
             </div>
             
             <button onclick="createTask()" id="createBtn">新增任務</button>
-            <button onclick="loadTasks()" id="refreshBtn">重新整理</button>
 
             <div class="tasks-container">
                 <h3>任務列表</h3>
@@ -274,11 +273,12 @@
         }
 
         // 載入任務列表
-        async function loadTasks() {
-            if (isLoading) return;
+        async function loadTasks(force = false) {
+            if (isLoading && !force) return;
             
+            const wasLoading = isLoading;
             isLoading = true;
-            updateButtonState(true);
+            if (!wasLoading) updateButtonState(true);
             
             try {
                 const response = await fetch(`${API_BASE}/tasks`);
@@ -328,7 +328,8 @@
 
                 if (response.ok) {
                     nameInput.value = '';
-                    await loadTasks();
+                    isLoading = false;
+                    await loadTasks(true);
                     updateApiStatus('success', '任務新增成功');
                 } else {
                     throw new Error(`HTTP ${response.status}`);
@@ -365,7 +366,8 @@
                 });
 
                 if (response.ok) {
-                    await loadTasks();
+                    isLoading = false;
+                    await loadTasks(true);
                     updateApiStatus('success', '任務狀態更新成功');
                 } else {
                     throw new Error(`HTTP ${response.status}`);
@@ -394,7 +396,8 @@
                 });
 
                 if (response.ok) {
-                    await loadTasks();
+                    isLoading = false;
+                    await loadTasks(true);
                     updateApiStatus('success', '任務刪除成功');
                 } else {
                     throw new Error(`HTTP ${response.status}`);
@@ -450,7 +453,6 @@
         // 更新按鈕狀態
         function updateButtonState(disabled) {
             document.getElementById('createBtn').disabled = disabled;
-            document.getElementById('refreshBtn').disabled = disabled;
         }
 
         // HTML 轉義
