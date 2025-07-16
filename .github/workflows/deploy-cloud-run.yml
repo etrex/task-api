@@ -31,7 +31,7 @@ jobs:
 
     - name: Configure Docker to use gcloud as credential helper
       run: |
-        gcloud auth configure-docker
+        gcloud auth configure-docker gcr.io
 
     - name: Build Docker image
       run: |
