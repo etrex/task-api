@@ -53,7 +53,8 @@ jobs:
           --no-cpu-throttling \
           --memory 512Mi \
           --timeout 3600 \
-          --port 8080
+          --port 8080 \
+          --service-account github-actions-deploy@gogolook-task-api-demo.iam.gserviceaccount.com
 
     - name: Get Service URL
       run: |
